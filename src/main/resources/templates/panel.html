@@ -1,0 +1,53 @@
+<!DOCTYPE html> 
+<html lang="es" xmlns:th="http://thymeleaf.org"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <title>Panel POS</title> 
+    <style> 
+        body{ margin:0; padding:0; background:#121212; font-family:Arial; color:white; } 
+        .contenedor{ padding:40px; } 
+        .titulo{ font-size:40px; margin-bottom:20px; } 
+        .card{ background:#1f1f1f; padding:30px; border-radius:20px; width:400px; margin-bottom: 25px; } 
+        .dato{ font-size:25px; margin-top:15px; } 
+        
+        /* Nuevos estilos para los botones del menú 🚀 */
+        .menu-botones { display: flex; gap: 15px; margin-top: 20px; }
+        .btn-panel { 
+            display: inline-block; 
+            padding: 15px 25px; 
+            background: #252525; 
+            color: #3498db; 
+            text-decoration: none; 
+            border-radius: 10px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            border: 1px solid #333;
+            transition: background 0.3s;
+        }
+        .btn-panel:hover { background: #333; color: #2ecc71; }
+    </style> 
+</head> 
+<body> 
+    <div class="contenedor"> 
+        <div class="titulo"> PANEL PRINCIPAL </div> 
+        
+        <div class="card"> 
+            <!-- Corregidos los atributos th:text para coincidir con el controlador 🚀 -->
+            <div class="dato"> Usuario: <span th:text="${nombreUsuario}"></span> </div> 
+            <div class="dato"> Rol: <span th:text="${rol}"></span> </div> 
+        </div> 
+
+        <!-- 🚀 Botonera de Control Total del Administrador Actualizada -->
+        <div class="menu-botones">
+            <a href="/panel/salon" class="btn-panel">🍽️ Ver Salón (Mesas)</a>
+            <a href="/panel/empleados" class="btn-panel">👥 Gestionar Personal</a>
+            <a href="/caja" class="btn-panel">💵 Monitor de Caja</a>
+            <a href="/parrilla" class="btn-panel">🍳 Monitor Cocina</a>
+            <a href="/jugos" class="btn-panel">🥤 Monitor Barra</a>
+            <a href="/logout" class="btn-panel btn-logout">🚪 Cerrar Sesión</a>
+        </div>
+
+
+    </div> 
+</body> 
+</html>

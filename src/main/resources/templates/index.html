@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <title>POS Restaurante</title>
+
+    <style>
+
+        body{
+            margin:0;
+            padding:0;
+            background:#1e1e2f;
+            font-family:Arial;
+            color:white;
+        }
+
+        .contenedor{
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            flex-direction:column;
+        }
+
+        .titulo{
+            font-size:45px;
+            margin-bottom:30px;
+            font-weight:bold;
+        }
+
+        .panel{
+            width:350px;
+            background:#2b2b40;
+            padding:40px;
+            border-radius:20px;
+            text-align:center;
+            box-shadow:0px 0px 20px rgba(0,0,0,0.5);
+        }
+
+        input{
+            width:90%;
+            padding:15px;
+            font-size:25px;
+            text-align:center;
+            border:none;
+            border-radius:10px;
+            outline:none;
+        }
+
+        button{
+            width:100%;
+            margin-top:20px;
+            padding:15px;
+            border:none;
+            border-radius:10px;
+            background:#00b894;
+            color:white;
+            font-size:20px;
+            cursor:pointer;
+        }
+
+        button:hover{
+            background:#00a383;
+        }
+
+        .error{
+            margin-top:20px;
+            color:#ff7675;
+            font-weight:bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <div class="titulo">
+        SISTEMA POS RESTAURANTE
+    </div>
+
+    <div class="panel">
+
+        <h2>INGRESO POR PIN</h2>
+
+        <form action="/login" method="post">
+
+            <input type="password"
+                   name="pin"
+                   placeholder="****"
+                   maxlength="4"
+                   required>
+
+            <button type="submit">
+                INGRESAR
+            </button>
+
+        </form>
+
+        <!-- Versión optimizada: solo se dibuja si el backend envía un error real -->
+        <div class="error" th:if="${error}" th:text="${error}"></div>
+
+
+    </div>
+
+</div>
+
+</body>
+</html>

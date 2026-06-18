@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Panel de Caja - La Sanjuanera</title>
+    <style>
+        *{ margin:0; padding:0; box-sizing:border-box; }
+        body{ background:#121212; color:white; font-family:Arial, sans-serif; padding:30px; }
+        h1{ text-align:center; font-size:45px; margin-bottom:10px; color:#ffd54f; }
+        p.sub{ text-align:center; font-size:18px; color:#b0bec5; margin-bottom:40px; }
+        .grid-caja{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:25px; }
+        .mesa-card{ background:#263238; border-radius:20px; padding:25px; display:flex; flex-direction:column; justify-content:space-between; border: 2px solid transparent; text-align:center; }
+        
+        /* Colores de control para el Cajero */
+        .estado-LIBRE { border-color: #616161; opacity: 0.6; }
+        .estado-OCUPADA { border-color: #ff9800; box-shadow: 0 4px 15px rgba(255,152,0,0.2); }
+        .estado-PAGO { border-color: #d63031; box-shadow: 0 4px 15px rgba(214,48,49,0.3); }
+
+        .mesa-card h2{ font-size:32px; margin-bottom:10px; }
+        .badge-estado{ display:inline-block; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:14px; text-transform:uppercase; margin-bottom:20px; }
+        
+        .monto-total{ font-size:36px; color:#ffd54f; font-weight:bold; margin:15px 0; background:#1a2327; padding:15px; border-radius:12px; border:1px solid #ffd54f; }
+        
+        .btn-cobrar{ background:#00c853; color:white; display:block; text-align:center; padding:16px; border-radius:12px; font-size:18px; font-weight:bold; text-decoration:none; transition:0.2s; margin-top:15px; }
+        .btn-cobrar:hover{ background:#00e676; transform:scale(1.02); }
+        .sin-consumo{ color:#b0bec5; font-size:18px; padding:24px 0; font-style:italic; }
+    </style>
+</head>
+<body>
+
+<h1>🏪 Control de Caja y Facturación</h1>
+<p class="sub">Punto de atención en salida - Restaurante La Sanjuanera</p>
+
+<!-- Contenedor de la rejilla de facturación -->
+<div class="grid-caja">
+    <!-- El cajero visualiza el mapa completo de salones -->
+    <div th:each="mesa : ${mesas}" th:class="'mesa-card estado-' + ${mesa.estado}">
+        
+        <div>
+            <h2 th:text="${mesa.nombre}">Mesa 1</h2>
+            
+<!-- Revisa que esté así en caja.html para pintar el texto real actualizado -->
+<div class="badge-estado"
+     th:style="${mesa.estado == 'LIBRE'} ? 'background:#616161;' : (${mesa.estado == 'OCUPADA'} ? 'background:#ff9800; color:black;' : 'background:#d63031;')"
+     th:text="${mesa.estado}">
+</div>
+
+        </div>
+
+        <div>
+            <!-- Si la mesa tiene consumo activo, muestra el total gigante en pesos colombianos -->
+            <div th:if="${totales.get(mesa.nombre) > 0}">
+                <span style="color:#b0bec5; font-size:14px; font-weight:bold; text-transform:uppercase;">Valor a Cobrar:</span>
+                <div class="monto-total" th:text="'$' + ${#numbers.formatDecimal(totales.get(mesa.nombre), 0, 'POINT', 0, 'COMMA')}"></div>
+                
+                <!-- Botón de acción directo para la persona encargada de la plata -->
+                <a th:href="@{/caja/pagar/{nombre}(nombre=${mesa.nombre})}" 
+                   class="btn-cobrar"
+                   onclick="return confirm('¿Se recibió el pago completo en caja para liberar esta mesa?')">
+                    💵 Registrar Pago
+                </a>
+            </div>
+            
+            <!-- Si la mesa está vacía, no genera cobro -->
+            <div th:if="${totales.get(mesa.nombre) == 0}" class="sin-consumo">
+                Mesa Vacía 🍃
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Historial de Ventas en segundo plano para la Caja -->
+<div style="margin-top: 60px; border-top: 2px dashed #37474f; padding-top: 30px;">
+    <h2 style="color: #b0bec5; font-size: 28px; margin-bottom: 20px;">📊 Historial de Cuentas Pagadas (Hoy)</h2>
+    <div style="background: #1a2327; border-radius: 15px; padding: 20px; overflow-x: auto;" class="contenedor-tabla">
+        <table style="width: 100%; border-collapse: collapse; font-size: 18px; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid #37474f; color: #ffd54f;">
+                    <th style="padding: 12px;">Mesa</th>
+                    <th style="padding: 12px;">Plato Solicitado</th>
+                    <th style="padding: 12px;">Bebida</th>
+                    <th style="padding: 12px;">Estado Interno</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="hist : ${historial}" style="border-bottom: 1px solid #263238;">
+                    <td th:text="${hist.mesa}" style="padding: 12px; font-weight: bold; color: #00bfa5;"></td>
+                    <td th:text="${hist.plato}" style="padding: 12px;"></td>
+                    <td th:text="${hist.bebida}" style="padding: 12px; color: #b0bec5;"></td>
+                    <td style="padding: 12px;"><span style="background: #00c853; padding: 4px 10px; border-radius: 6px; font-size: 14px; font-weight: bold;">💸 COBRADO</span></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(historial)}">
+                    <td colspan="4" style="text-align: center; padding: 30px; color: #616161; font-style: italic;">Ninguna cuenta cobrada en este turno aún.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- SCRIPT DE REFRESCO DINÁMICO ASÍNCRONO (CORREGIDO) -->
+<script>
+setInterval(() => {
+    fetch(window.location.href)
+    .then(response => response.text())
+    .then(html => {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, 'text/html');
+        
+        // 🔄 Actualiza la cuadrícula de las mesas activas en segundo plano
+        let cajaVieja = document.querySelector('.grid-caja');
+        let cajaNueva = doc.querySelector('.grid-caja');
+        if (cajaVieja && cajaNueva) {
+            cajaVieja.innerHTML = cajaNueva.innerHTML;
+        }
+        
+        // 🔄 Actualiza la tabla del historial de forma completamente silenciosa
+        let tablaVieja = document.querySelector('.contenedor-tabla');
+        let tablaNueva = doc.querySelector('.contenedor-tabla');
+        if (tablaVieja && tablaNueva) {
+            tablaVieja.innerHTML = tablaNueva.innerHTML;
+        }
+    })
+    .catch(err => console.log("Sincronizando caja con el servidor central..."));
+}, 4000); // Consulta las actualizaciones cada 4 segundos
+</script>
+
+</body>
+</html>

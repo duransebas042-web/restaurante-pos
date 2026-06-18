@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Panel Parrilla</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+        body{
+            background:#111;
+            color:white;
+            font-family:Arial, sans-serif;
+            padding:30px;
+        }
+        h1 {
+            margin-bottom:30px;
+            font-size:45px;
+            border-bottom: 3px solid #ff9800;
+            padding-bottom: 10px;
+        }
+        /* Distribución en rejilla para aprovechar pantallas horizontales de cocina */
+        .grid-pedidos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .pedido{
+            background:#263238;
+            padding:25px;
+            border-radius:20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 2px solid transparent;
+        }
+        /* Resaltar platos que entran nuevos en color naranja */
+        .borde-PENDIENTE { border-color: #ff9800; }
+        .borde-PREPARANDO { border-color: #2196f3; }
+        .borde-LISTO { border-color: #00c853; opacity: 0.7; }
+
+        .pedido h2{
+            font-size:30px;
+            margin: 15px 0;
+        }
+        ul{
+            margin-left:25px;
+            margin-bottom:20px;
+            flex-grow: 1;
+        }
+        li{
+            margin-bottom:8px;
+            font-size:20px;
+        }
+        .estado-tag{
+            display:inline-block;
+            padding:8px 14px;
+            border-radius:10px;
+            font-weight:bold;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        .observacion{
+            margin-top:15px;
+            padding: 10px;
+            background: #1a2327;
+            border-left: 4px solid #ffd54f;
+            border-radius: 4px;
+            font-size:18px;
+            color:#ffd54f;
+        }
+        .mesa-tag{
+            background:#00bfa5;
+            display:inline-block;
+            padding:8px 15px;
+            border-radius:10px;
+            font-weight:bold;
+            font-size:18px;
+        }
+        .acciones-cocina {
+            display:flex;
+            gap:10px;
+            margin-top:20px;
+        }
+        .btn-accion {
+            flex: 1;
+            color:white;
+            padding:14px;
+            border-radius:10px;
+            text-decoration:none;
+            font-weight:bold;
+            text-align: center;
+            font-size: 18px;
+        }
+        .mesero-tag {
+            color: #3498db; 
+            font-weight: bold; 
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>👨‍🍳 Panel de Control - Parrilla Cocina</h1>
+
+<!-- Contenedor en Grid para organizar las comandas -->
+<div class="grid-pedidos">
+
+    <!-- Solo muestra platos que no han sido entregados al cliente final -->
+    <div th:each="pedido : ${pedidos}"
+         th:if="${pedido?.estado?.toString() != 'ENTREGADO'}"
+         th:class="'pedido borde-' + ${pedido?.estado}">
+         
+         <!-- 🚀 CORREGIDO: Se cambió 'item.atendidoPor' por 'pedido?.atendidoPor' con operador seguro para evitar Error 500 y se quitó la etiqueta '<td>' rota -->
+         <div class="mesero-tag">
+             Mesero: <span th:text="${pedido?.atendidoPor} ?: 'Sin asignar'">Nombre Mesero</span>
+         </div>
+
+        <div>
+            <div class="mesa-tag">
+                🍽 <span th:text="${pedido?.mesa}"></span>
+            </div>
+
+            <h2 th:text="${pedido?.plato}"></h2>
+
+            <ul>
+                <li th:each="acompanamiento : ${pedido?.acompanamientos}"
+                    th:text="'✔ ' + ${acompanamiento}">
+                </li>
+            </ul>
+
+            <div class="observacion" th:if="${pedido?.observacion != null && pedido?.observacion != ''}">
+                📝 <span th:text="${pedido?.observacion}"></span>
+            </div>
+        </div>
+
+        <div>
+            <!-- Visualización limpia y única del Estado del plato -->
+            <div>
+                <!-- Muestra el estado exclusivo de la cocina -->
+                <div class="estado-tag"
+                     th:style="${pedido?.estadoComida == 'PENDIENTE'} ? 'background:#ff9800; color:white;' : (${pedido?.estadoComida == 'PREPARANDO'} ? 'background:#2196f3; color:white;' : 'background:#00c853; color:white;')"
+                     th:text="${pedido?.estadoComida}">
+                </div>
+
+                <div class="acciones-cocina">
+                    <!-- Botón para Iniciar (Solo si está PENDIENTE) -->
+                    <a th:if="${pedido?.estadoComida == 'PENDIENTE'}"
+                       th:href="@{/estado/{id}/PREPARANDO/parrilla(id=${pedido?.id})}"
+                       class="btn-accion" style="background:#2196f3; padding:12px 18px; border-radius:10px; color:white; text-decoration:none; font-weight:bold;">
+                        👨‍🍳 Iniciar
+                    </a>
+
+                    <!-- Botón para marcar Listo (Si está PENDIENTE o PREPARANDO) -->
+                    <a th:if="${pedido?.estadoComida == 'PENDIENTE' || pedido?.estadoComida == 'PREPARANDO'}"
+                       th:href="@{/estado/{id}/LISTO/parrilla(id=${pedido?.id})}"
+                       class="btn-accion" style="background:#00c853; padding:12px 18px; border-radius:10px; color:white; text-decoration:none; font-weight:bold;">
+                        ✅ Listo
+                    </a>
+
+                    <!-- Botón para Archivar/Despachar (Solo cuando ya está LISTO en barra) -->
+                    <a th:if="${pedido?.estadoComida == 'LISTO'}"
+                       th:href="@{/estado/{id}/ENTREGADO/parrilla(id=${pedido?.id})}"
+                       class="btn-accion" style="background:#616161; padding:12px 18px; border-radius:10px; color:white; text-decoration:none; font-weight:bold;">
+                        📦 Entregado
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Audio de alerta para nuevos pedidos -->
+<audio id="sonido">
+    <source src="/audio/notificacion.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+let cantidadAnterior = document.querySelectorAll('.pedido').length;
+
+setInterval(() => {
+    fetch(window.location.href)
+    .then(response => response.text())
+    .then(html => {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, 'text/html');
+        let nuevaCantidad = doc.querySelectorAll('.pedido').length;
+
+        // Si entran más comandas de las que había, suena la alerta en la cocina
+        if(nuevaCantidad > cantidadAnterior){
+            let audio = document.getElementById('sonido');
+            if(audio) audio.play().catch(e => console.log("Audio bloqueado por navegador"));
+        }
+        cantidadAnterior = nuevaCantidad;
+        
+        // Refrescar el contenido visual de la rejilla sin recargar toda la página
+        document.querySelector('.grid-pedidos').innerHTML = doc.querySelector('.grid-pedidos').innerHTML;
+    });
+}, 3000);
+</script>
+
+    <!-- Script de refresco automático cada 5 segundos para Cocina 🚀 -->
+    <script>
+        setInterval(function() {
+            window.location.reload();
+        }, 5000); // 5000 milisegundos = 5 segundos
+    </script>
+</body>
+</html>

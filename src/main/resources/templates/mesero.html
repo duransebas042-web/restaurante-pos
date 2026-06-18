@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+
+<head>
+
+    <title>Panel Mesero</title>
+
+    <style>
+
+        body{
+            background:#121212;
+            color:white;
+            font-family:Arial;
+            padding:20px;
+        }
+
+        h1{
+            text-align:center;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+            gap:20px;
+            margin-top:30px;
+        }
+
+        .mesa{
+            padding:30px;
+            border-radius:15px;
+            text-align:center;
+            font-size:22px;
+            font-weight:bold;
+            transition:0.3s;
+            text-decoration:none;
+            color:white;
+        }
+
+        .mesa:hover{
+            transform:scale(1.05);
+        }
+
+        .LIBRE{
+            background:#00b894;
+        }
+
+        .OCUPADA{
+            background:#fdcb6e;
+            color:black;
+        }
+
+        .PAGO{
+            background:#d63031;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>PANEL MESERO</h1>
+
+<div class="grid">
+
+    <a th:each="mesa : ${mesas}"
+       th:href="@{/pedido/{nombre}(nombre=${mesa.nombre})}"
+       th:class="'mesa ' + ${mesa.estado}">
+
+        <div th:text="${mesa.nombre}"></div>
+
+        <br>
+
+        <div th:text="${mesa.estado}"></div>
+
+    </a>
+
+    <a href="/mesa-especial"
+       class="mesa"
+       style="background:#ff9800;">
+
+        <div>
+            + Mesa Especial
+        </div>
+
+        <br>
+
+        <div>
+            PERSONALIZADA
+        </div>
+
+    </a>
+
+</div>
+
+<!-- SCRIPT DE REFRESCO AUTOMÁTICO SILENCIOSO -->
+<script>
+setInterval(() => {
+    fetch(window.location.href)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Captura el estado actualizado del contenedor de las mesas
+            const nuevoGrid = doc.querySelector('.grid').innerHTML;
+            
+            // Sobrescribe solo las tarjetas de las mesas sin recargar la página entera
+            document.querySelector('.grid').innerHTML = nuevoGrid;
+        })
+        .catch(error => console.error('Error al actualizar el panel de mesas:', error));
+}, 4000); // Consulta cambios en segundo plano cada 4 segundos
+</script>
+
+</body>
+</html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Pedidos</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+        body{
+            font-family:Arial, Helvetica, sans-serif;
+            background:#111;
+            color:white;
+        }
+        .container{
+            display:flex;
+            height:100vh;
+        }
+        .menu{
+            width:50%;
+            background:#263238;
+            padding:30px;
+            overflow-y:auto;
+            border-right:4px solid #00d1b2;
+        }
+        .pedidos{
+            width:50%;
+            padding:30px;
+            overflow-y:auto;
+        }
+        h1{
+            margin-bottom:30px;
+            font-size:50px;
+        }
+        .grid-platos{
+            display:grid;
+            grid-template-columns:repeat(2, 1fr);
+            gap:25px;
+        }
+        .plato-btn{
+            background:#00bfa5;
+            color:white;
+            text-decoration:none;
+            font-size:25px;
+            font-weight:bold;
+            padding:45px;
+            border-radius:20px;
+            text-align:center;
+            transition:0.2s;
+        }
+        .plato-btn:hover{
+            background:#00d9bb;
+            transform:scale(1.02);
+        }
+        .pedido-card{
+            background:#263238;
+            padding:25px;
+            border-radius:20px;
+            margin-bottom:20px;
+        }
+        .pedido-card h2{
+            margin-bottom:15px;
+            font-size:35px;
+        }
+        .estado{
+            color:white;
+            display:inline-block;
+            padding:10px 18px;
+            border-radius:10px;
+            font-size:18px;
+            font-weight:bold;
+            margin-bottom:20px;
+        }
+        .pedido-card ul{
+            margin-left:20px;
+            margin-bottom:20px;
+        }
+        .pedido-card li{
+            margin-bottom:10px;
+            font-size:22px;
+        }
+        .bebida{
+            font-size:24px;
+            margin-bottom:20px;
+        }
+        .acciones{
+            display:flex;
+            gap:10px;
+            margin-top:20px;
+        }
+        .btn-cambiar,
+        .btn-editar,
+        .btn-eliminar{
+            flex:1;
+            border:none;
+            padding:18px;
+            border-radius:12px;
+            color:white;
+            font-size:20px;
+            cursor:pointer;
+            font-weight:bold;
+            text-align:center;
+            text-decoration:none;
+        }
+        .btn-cambiar{ background:#ff9800; }
+        .btn-editar{ background:#2196f3; }
+        .btn-eliminar{ background:#e53935; }
+        .btn-eliminar:hover{ background:#ff4c48; }
+        
+        .mesa-tag{
+            background:#00bfa5;
+            display:inline-block;
+            padding:8px 15px;
+            border-radius:10px;
+            margin-bottom:15px;
+            font-weight:bold;
+            font-size:18px;
+        }
+        .observacion{
+            margin-top:15px;
+            font-size:20px;
+            color:#ffd54f;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Sección Izquierda: Menú de selección -->
+    <div class="menu">
+
+    <!-- Pega esto arriba del todo en pedido.html -->
+<div style="background: #263238; padding: 15px; border-bottom: 2px solid #00bfa5; margin-bottom: 20px;">
+    <a href="/" style="background: #37474f; color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 18px; display: inline-block;">
+        🏠 VOLVER AL MAPA DE MESAS
+    </a>
+</div>
+
+
+        <h1>
+            Menú - <span th:text="${mesa}"></span>
+        </h1>
+
+        <!-- Mensaje de bienvenida privado y firma de auditoría del Mesero 🚀 -->
+<div style="background: #1f1f1f; padding: 10px 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #2ecc71;">
+    <span style="color: #cbd5e1; font-size: 14px;">Atendiendo:</span>
+    <strong style="color: #ffffff; font-size: 16px; display: block;" th:text="${nombreMesero}">Nombre del Mesero</strong>
+</div>
+
+<div class="titulo">Menú - [[${mesa}]]</div>
+
+
+        <div class="grid-platos">
+            <a th:each="plato : ${platos}"
+               th:href="@{/configurar/{mesa}/{plato}(mesa=${mesa}, plato=${plato.nombre})}"
+               class="plato-btn"
+               th:text="${plato.nombre}">
+            </a>
+        </div>
+    </div>
+
+    <!-- Sección Derecha: Comandas actuales de la mesa -->
+    <div class="pedidos">
+        <h1>Pedidos Actuales</h1>
+
+        <!-- CONTENEDOR DE ACTUALIZACIÓN AUTOMÁTICA -->
+        <div id="seccion-pedidos">
+
+            <!-- Pega esto en tu pedido.html abajo del botón "ENVIAR PEDIDO A COCINA" -->
+<div style="background: #1a2327; border: 2px solid #ffd54f; border-radius: 15px; padding: 20px; margin-bottom: 25px; text-align: center;">
+    <span style="font-size: 20px; color: #b0bec5; font-weight: bold; text-transform: uppercase;">💰 Total Cuenta Actual</span>
+    <h2 style="font-size: 42px; color: #ffd54f; margin-top: 5px;" 
+        th:text="'$' + ${#numbers.formatDecimal(total, 0, 'POINT', 0, 'COMMA')}">
+        $0
+    </h2>
+</div>
+
+            
+            <!-- Botón General de Enviar Orden Completa -->
+            <div style="margin-bottom: 25px;">
+                <a th:href="@{/enviar-cocina/{mesa}(mesa=${mesa})}" 
+                   style="background: #00c853; color: white; display: block; text-align: center; padding: 22px; border-radius: 15px; font-size: 22px; font-weight: bold; text-decoration: none; transition: 0.2s;"
+                   onmouseover="this.style.background='#00e676'" 
+                   onmouseout="this.style.background='#00c853'">
+                    🚀 ENVIAR PEDIDO A COCINA
+                </a>
+            </div>
+
+            <!-- Iteración de las tarjetas de platos -->
+            <div class="pedido-card" th:each="pedido, iterStat : ${pedidos}">
+                
+                <div class="mesa-tag">
+                    🍽 <span th:text="${pedido.mesa}"></span>
+                </div>
+
+                <h2 th:text="${pedido.plato}"></h2>
+
+                <!-- Control de colores del Estado actual -->
+                <div class="estado"
+                     th:style="${pedido.estado == 'CARRITO'} ? 'background:#9c27b0;' : (${pedido.estado == 'PENDIENTE'} ? 'background:#ff9800;' : (${pedido.estado == 'PREPARANDO'} ? 'background:#2196f3;' : (${pedido.estado == 'LISTO'} ? 'background:#00c853;' : 'background:#616161;')))"
+                     th:text="${pedido.estado == 'CARRITO' ? '🛒 CARRITO' : pedido.estado}">
+                </div>
+
+                <ul>
+                    <li th:each="acompanamiento : ${pedido.acompanamientos}"
+                        th:text="'✔ ' + ${acompanamiento}">
+                    </li>
+                </ul>
+
+                <div class="bebida">
+                    🥤 <span th:text="${pedido.bebida}"></span>
+                </div>
+
+                <div class="observacion" th:if="${pedido.observacion != null && pedido.observacion != ''}">
+                    📝 <span th:text="${pedido.observacion}"></span>
+                </div>
+
+                <!-- Bloques lógicos de Acciones según estado del plato -->
+                <div class="acciones">
+                    <!-- Flujo si está en CARRITO temporal -->
+                    <th:block th:if="${pedido.estado == 'CARRITO'}">
+                        <span style="color: #e040fb; font-size: 18px; font-weight: bold; padding: 18px 0; flex: 1;">
+                            ⏳ Esperando envío...
+                        </span>
+                        <a class="btn-eliminar" 
+                           th:href="@{/eliminar/{mesa}/{index}(mesa=${mesa}, index=${iterStat.index})}"
+                           onclick="return confirm('¿Deseas quitar este plato del carrito?')">
+                            🗑 Eliminar
+                        </a>
+                    </th:block>
+
+                    <!-- Flujo si ya está enviado a producción -->
+                    <th:block th:if="${pedido.estado != 'CARRITO'}">
+                        <span style="font-size: 18px; font-weight: bold; padding: 18px 0; flex: 1;"
+                              th:style="${pedido.estado == 'LISTO'} ? 'color:#00c853; text-transform:uppercase; animation: blink 1.5s infinite;' : 'color:#b0bec5;'">
+                            <span th:text="${pedido.estado == 'LISTO'} ? '🔔 ¡RECOGER EN BARRA!' : '⏳ En cola de cocina...'"></span>
+                        </span>
+                    </th:block>
+                </div>
+
+            </div> <!-- Cierre tarjeta -->
+            
+        </div> <!-- Cierre id="seccion-pedidos" -->
+    </div>
+
+</div>
+
+<!-- SCRIPT DE REFRESCO SILENCIOSO CADA 4 SEGUNDOS -->
+<script>
+// Reemplaza tu script de pedido.html por esta versión con alertas nativas
+setInterval(() => {
+    const mesaActual = "[[${mesa}]]";
+    
+    // 1. Revisa si hay notificaciones de pago desde la caja
+    fetch('/mesero/alertas/' + encodeURIComponent(mesaActual))
+    .then(res => res.json())
+    .then(alertas => {
+        alertas.forEach(msg => {
+            alertasMeseroVisual(msg);
+        });
+    });
+
+    // 2. Sigue haciendo el refresco silencioso de los platos
+    fetch(window.location.href)
+    .then(response => response.text())
+    .then(html => {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, 'text/html');
+        let seccionVieja = document.getElementById('seccion-pedidos');
+        let seccionNueva = doc.getElementById('seccion-pedidos');
+        if (seccionVieja && seccionNueva) {
+            seccionVieja.innerHTML = seccionNueva.innerHTML;
+        }
+    });
+}, 4000);
+
+// Función estética para lanzar la alerta en el celular
+function alertasMeseroVisual(mensaje) {
+    let alertaDiv = document.createElement('div');
+    alertaDiv.style.position = 'fixed';
+    alertaDiv.style.top = '20px';
+    alertaDiv.style.left = '50%';
+    alertaDiv.style.transform = 'translateX(-50%)';
+    alertaDiv.style.background = '#00c853';
+    alertaDiv.style.color = 'white';
+    alertaDiv.style.padding = '20px 30px';
+    alertaDiv.style.borderRadius = '15px';
+    alertaDiv.style.fontSize = '22px';
+    alertaDiv.style.fontWeight = 'bold';
+    alertaDiv.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+    alertaDiv.style.zIndex = '9999';
+    alertaDiv.innerHTML = "🔔 " + mensaje;
+    
+    document.body.appendChild(alertaDiv);
+    
+    // Desaparece sola a los 6 segundos
+    setTimeout(() => { alertaDiv.remove(); }, 6000);
+}
+
+</script>
+
+</body>
+</html>

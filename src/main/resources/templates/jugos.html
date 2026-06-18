@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Panel Jugos</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+        body{
+            background:#111;
+            color:white;
+            font-family:Arial, sans-serif;
+            padding:30px;
+        }
+        h1 {
+            margin-bottom:30px;
+            font-size:45px;
+            border-bottom: 3px solid #00d1b2;
+            padding-bottom: 10px;
+        }
+        /* Distribución en rejilla para aprovechar pantallas horizontales */
+        .grid-pedidos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .pedido{
+            background:#263238;
+            padding:25px;
+            border-radius:20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 2px solid transparent;
+        }
+        /* Bordes de color dinámicos según el estado */
+        .borde-PENDIENTE { border-color: #ff9800; }
+        .borde-PREPARANDO { border-color: #2196f3; }
+        .borde-LISTO { border-color: #00c853; opacity: 0.7; }
+
+        .pedido h2{
+            font-size:32px;
+            margin: 15px 0;
+            color: #00bfa5;
+        }
+        .plato-referencia {
+            font-size: 18px;
+            color: #b0bec5;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        .estado-tag{
+            display:inline-block;
+            padding:8px 14px;
+            border-radius:10px;
+            font-weight:bold;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        .mesa-tag{
+            background:#00bfa5;
+            display:inline-block;
+            padding:8px 15px;
+            border-radius:10px;
+            font-weight:bold;
+            font-size:18px;
+        }
+        .acciones-bar {
+            display:flex;
+            gap:10px;
+            margin-top:20px;
+        }
+        .btn-accion {
+            flex: 1;
+            color:white;
+            padding:14px;
+            border-radius:10px;
+            text-decoration:none;
+            font-weight:bold;
+            text-align: center;
+            font-size: 18px;
+        }
+        .mesero-tag {
+            color: #3498db; 
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🥤 Panel de Control - Barra de Jugos / Bebidas</h1>
+
+<!-- Contenedor en Grid para organizar las comandas de bebidas -->
+<div class="grid-pedidos">
+
+    <!-- FILTRO HTML: Solo muestra pedidos que tengan bebida asignada y que no hayan sido entregados -->
+    <div th:each="pedido : ${pedidos}"
+         th:if="${pedido?.bebida != null && pedido?.bebida != '' && pedido?.estado?.toString() != 'ENTREGADO'}"
+         th:class="'pedido borde-' + ${pedido?.estado}">
+         
+         <!-- 🚀 CORREGIDO: Se cambió 'item.atendidoPor' por 'pedido?.atendidoPor' con operador seguro para evitar Error 500 -->
+         <div class="mesero-tag">
+             Mesero: <span th:text="${pedido?.atendidoPor} ?: 'Sin asignar'">Nombre Mesero</span>
+         </div>
+
+        <div>
+            <div class="mesa-tag">
+                🍽 <span th:text="${pedido?.mesa}"></span>
+            </div>
+
+            <!-- Muestra la bebida como título principal en lugar del plato -->
+            <h2>🥤 <span th:text="${pedido?.bebida}"></span></h2>
+            
+            <!-- Muestra el plato únicamente como texto de referencia por si es un combo -->
+            <div class="plato-referencia">
+                Acompaña a: <span th:text="${pedido?.plato}"></span>
+            </div>
+        </div>
+
+        <div>
+            <!-- Muestra el estado exclusivo del bar -->
+            <div class="estado-tag"
+                 th:style="${pedido?.estadoBebida == 'PENDIENTE'} ? 'background:#ff9800; color:white;' : (${pedido?.estadoBebida == 'PREPARANDO'} ? 'background:#2196f3; color:white;' : 'background:#00c853; color:white;')"
+                 th:text="${pedido?.estadoBebida}">
+            </div>
+
+            <div class="acciones-bar">
+                <!-- Botón para Iniciar Bebida -->
+                <a th:if="${pedido?.estadoBebida == 'PENDIENTE'}"
+                   th:href="@{/estado/{id}/PREPARANDO/jugos(id=${pedido?.id})}"
+                   class="btn-accion" style="background:#2196f3; padding:12px 18px; border-radius:10px; color:white; text-decoration:none; font-weight:bold;">
+                    🍹 Iniciar
+                </a>
+
+                <!-- Botón para marcar Listo -->
+                <a th:if="${pedido?.estadoBebida == 'PENDIENTE' || pedido?.estadoBebida == 'PREPARANDO'}"
+                   th:href="@{/estado/{id}/LISTO/jugos(id=${pedido?.id})}"
+                   class="btn-accion" style="background:#00c853; padding:12px 18px; border-radius:10px; color:white; text-decoration:none; font-weight:bold;">
+                    ✅ Listo
+                </a>
+
+                <!-- Botón para Archivar Jugo Despachado -->
+                <a th:if="${pedido?.estadoBebida == 'LISTO'}"
+                   th:href="@{/estado/{id}/ENTREGADO/jugos(id=${pedido?.id})}"
+                   class="btn-accion" style="background:#616161; padding:12px 18px; border-radius:10px; color:white; text-decoration:none; font-weight:bold;">
+                    📦 Entregado
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Audio de alerta para nuevas bebidas -->
+<audio id="sonido">
+    <source src="/audio/notificacion.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+let cantidadAnterior = document.querySelectorAll('.pedido').length;
+
+setInterval(() => {
+    fetch(window.location.href)
+    .then(response => response.text())
+    .then(html => {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(html, 'text/html');
+        let nuevaCantidad = doc.querySelectorAll('.pedido').length;
+
+        if(nuevaCantidad > cantidadAnterior){
+            let audio = document.getElementById('sonido');
+            if(audio) audio.play().catch(e => console.log("Audio bloqueado por políticas del navegador"));
+        }
+        cantidadAnterior = nuevaCantidad;
+        
+        // Refrescar el contenido de la rejilla de jugos de forma silenciosa
+        document.querySelector('.grid-pedidos').innerHTML = doc.querySelector('.grid-pedidos').innerHTML;
+    });
+}, 3000);
+</script>
+
+    <!-- Script de refresco automático cada 5 segundos para Barra 🚀 -->
+    <script>
+        setInterval(function() {
+            window.location.reload();
+        }, 5000); // 5000 milisegundos = 5 segundos
+    </script>
+</body>
+</html>

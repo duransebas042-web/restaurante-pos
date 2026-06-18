@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <title>Mesa Especial</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+
+            background:#111;
+
+            color:white;
+
+            font-family:Arial;
+
+            display:flex;
+
+            justify-content:center;
+
+            align-items:center;
+
+            height:100vh;
+        }
+
+        .card{
+
+            background:#263238;
+
+            width:500px;
+
+            padding:40px;
+
+            border-radius:20px;
+        }
+
+        h1{
+
+            margin-bottom:30px;
+
+            text-align:center;
+
+            font-size:40px;
+        }
+
+        input{
+
+            width:100%;
+
+            padding:20px;
+
+            border:none;
+
+            border-radius:12px;
+
+            font-size:22px;
+
+            margin-bottom:25px;
+
+            background:#37474f;
+
+            color:white;
+        }
+
+        button{
+
+            width:100%;
+
+            padding:20px;
+
+            border:none;
+
+            border-radius:12px;
+
+            background:#00bfa5;
+
+            color:white;
+
+            font-size:24px;
+
+            font-weight:bold;
+
+            cursor:pointer;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+    <h1>Mesa Especial</h1>
+
+    <form action="/pedido-especial">
+
+        <input
+            type="text"
+
+            name="nombre"
+
+            placeholder="
+Ej:
+Carlos
+Para Llevar
+Domicilio
+Terraza">
+
+        <button type="submit">
+
+            Continuar
+
+        </button>
+
+    </form>
+
+</div>
+
+</body>
+</html>

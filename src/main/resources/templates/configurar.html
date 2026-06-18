@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head>
+    <title>Configurar Pedido - La Sanjuanera</title>
+    <style>
+        *{ margin:0; padding:0; box-sizing:border-box; }
+        body{
+            background:#111; color:white; font-family:Arial, Helvetica, sans-serif;
+            display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px;
+        }
+        .card{ background:#263238; width:500px; padding:30px; border-radius:25px; border:2px solid #00bfa5; }
+        h1{ text-align:center; margin-bottom:10px; font-size:32px; color:#00bfa5; }
+        .sub-mesa{ text-align:center; color:#ffd54f; font-size:18px; margin-bottom:25px; font-weight:bold; }
+        
+        .cantidad-box{ display:flex; justify-content:center; align-items:center; gap:20px; margin-bottom:30px; }
+        .cantidad{ font-size:45px; font-weight:bold; width:80px; text-align:center; }
+        .btn-cantidad{ width:60px; height:60px; border:none; border-radius:15px; font-size:32px; background:#00bfa5; color:white; cursor:pointer; font-weight:bold; }
+        
+        .config-section{ margin-bottom:20px; }
+        .config-section h2{ margin-bottom:12px; font-size:20px; color:#b0bec5; text-transform:uppercase; }
+        
+        /* Checkbox oculto */
+        .item-switch input { display:none; }
+        .item-switch { display: block; margin-bottom: 10px; }
+        
+        /* Botón dinámico interactivo */
+        .btn-toggle {
+            display:flex; justify-content:space-between; align-items:center;
+            background:#d63031; color:white; padding:15px 20px; border-radius:12px;
+            font-weight:bold; font-size:18px; cursor:pointer; transition:0.2s;
+        }
+        /* Cuando el ingrediente está activo (Por defecto al entrar) se pone verde */
+        .item-switch input:checked + .btn-toggle {
+            background:#00bfa5; box-shadow:0 4px 10px rgba(0,189,165,0.2);
+        }
+        .status-txt::after { content: "❌ QUITAR"; }
+        .item-switch input:checked + .btn-toggle .status-txt::after { content: "✔ LLEVA"; }
+
+        .grupo-botones { display:flex; gap:10px; }
+        .grupo-botones input { display:none; }
+        .grupo-botones label {
+            flex: 1; background:#1a2327; padding:15px; border-radius:12px; text-align:center; font-weight:bold; cursor:pointer;
+        }
+        .grupo-botones input:checked + label { background:#2196f3; }
+
+        .select-box{ width:100%; padding:18px; border-radius:12px; border:none; font-size:20px; background:#37474f; color:white; }
+        .btn-continuar{ width:100%; border:none; padding:20px; border-radius:15px; font-size:24px; background:#00c853; color:white; cursor:pointer; font-weight:bold; display:block; text-align:center; text-decoration:none; text-transform:uppercase; margin-top:20px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1 th:text="${plato}"></h1>
+    <div class="sub-mesa">📌 MESA: <span th:text="${mesa}"></span></div>
+
+    <!-- Cantidad -->
+    <div class="cantidad-box">
+        <button class="btn-cantidad" onclick="disminuir()">-</button>
+        <div class="cantidad" id="cantidad">1</div>
+        <button class="btn-cantidad" onclick="aumentar()">+</button>
+    </div>
+
+    <!-- 🍛 GENERACIÓN DINÁMICA DE INGREDIENTES EXCLUSIVOS DEL PLATO -->
+    <div class="config-section">
+        <h2>Inclusiones del Plato</h2>
+        <div th:each="opcion, iter : ${opciones}" class="item-switch">
+            <input type="checkbox" th:id="'opc_' + ${iter.index}" name="ingredientes_check" th:value="${opcion}" checked>
+            <label th:for="'opc_' + ${iter.index}" class="btn-toggle">
+                <span th:text="${opcion}">Ingrediente</span>
+                <span class="status-txt"> </span>
+            </label>
+        </div>
+    </div>
+
+    <!-- 🥤 BEBIDA EXCLUSIVA (Chicha o Maracuyá) -->
+    <div class="config-section">
+        <h2>🥤 Bebida del Plato</h2>
+        <div class="grupo-botones">
+            <input type="radio" id="bebida_chicha" name="bebida_radio" value="Chicha Fría" checked>
+            <label for="bebida_chicha">Chicha</label>
+            
+            <input type="radio" id="bebida_maracuya" name="bebida_radio" value="Maracuyá">
+            <label for="bebida_maracuya">Maracuyá</label>
+        </div>
+    </div>
+
+    <!-- Notas -->
+    <div class="config-section">
+        <h2>📝 Observaciones</h2>
+        <textarea id="observacion" class="select-box" rows="2" placeholder="Ej: Cambiar patacón por papas, sin ensalada..."></textarea>
+    </div>
+
+    <a id="btnConfirmar" class="btn-continuar">Confirmar Pedido 🛒</a>
+</div>
+
+<!-- Formulario invisible para transportar los datos de La Sanjuanera de forma oculta -->
+<form id="formOculto" th:action="@{/confirmar}" method="post" style="display: none;"></form>
+
+
+<script th:inline="javascript">
+    let cantidad = 1;
+    function aumentar(){ cantidad++; document.getElementById("cantidad").innerText = cantidad; }
+    function disminuir(){ if(cantidad > 1){ cantidad--; document.getElementById("cantidad").innerText = cantidad; } }
+
+        document.getElementById("btnConfirmar").addEventListener("click", function(){
+        const mesa = /*[[${mesa}]]*/ 'Mesa 1';
+        const plato = /*[[${plato}]]*/ 'Plato';
+        
+        // Recolectamos las guarniciones que el mesero dejó en VERDE (Checked)
+        let seleccionados = [];
+        document.querySelectorAll('input[name="ingredientes_check"]:checked').forEach(cb => {
+            seleccionados.push(cb.value);
+        });
+        
+        const bebida = document.querySelector('input[name="bebida_radio"]:checked').value;
+        const observacion = document.getElementById("observacion").value;
+        
+        // Buscamos nuestro formulario invisible
+        const form = document.getElementById("formOculto");
+        form.innerHTML = ""; // Limpiamos envíos anteriores si los hay
+        
+        // Función auxiliar rápida para crear campos ocultos (Inputs)
+        function crearInputOculto(nombre, valor) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = nombre;
+            input.value = valor;
+            form.appendChild(input);
+        }
+        
+        // Inyectamos las variables principales al formulario
+        crearInputOculto("mesa", mesa);
+        crearInputOculto("plato", plato);
+        crearInputOculto("cantidad", cantidad);
+        crearInputOculto("bebida", bebida);
+        crearInputOculto("observacion", observacion);
+        
+        // Inyectamos la lista de acompañamientos seleccionados
+        seleccionados.forEach(ing => {
+            crearInputOculto("seleccionados", ing);
+        });
+        
+        // ¡Disparamos el envío seguro por POST! Los datos viajan invisibles en el cuerpo de la petición
+        form.submit();
+    });
+
+</script>
+
+</body>
+</html>

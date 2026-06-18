@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Personal - POS La Sanjuanera</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 20px; color: #2c3e50; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        h2, h3 { color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+        .form-inline { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 30px; background: #fafbfc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .form-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        label { font-weight: bold; font-size: 14px; }
+        input, select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        button { padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; height: 41px; }
+        button:hover { background-color: #2980b9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: bold; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-admin { background: #fee2e2; color: #ef4444; }
+        .badge-mesero { background: #e0f2fe; color: #0284c7; }
+        .badge-cajero { background: #dcfce7; color: #16a34a; }
+        .badge-cocina { background: #fef3c7; color: #d97706; }
+        .btn-volver { display: inline-block; margin-bottom: 20px; color: #64748b; text-decoration: none; font-size: 14px; }
+        .btn-volver:hover { color: #334155; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/panel" class="btn-volver">← Volver al Panel Operativo</a>
+        <h2>👥 Gestión de Personal</h2>
+        
+        <!-- Formulario de Registro -->
+        <h3>Registrar Nuevo Empleado</h3>
+        <form action="/panel/empleados/crear" method="POST" class="form-inline">
+            <div class="form-group">
+                <label for="nombre">Nombre Completo:</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ej. Juan Pérez" required>
+            </div>
+            <div class="form-group">
+                <label for="pin">PIN Numérico:</label>
+                <input type="password" id="pin" name="pin" placeholder="Ej. 4321" pattern="[0-9]+" required>
+            </div>
+            <div class="form-group">
+                <label for="rol">Rol Asignado:</label>
+                <select id="rol" name="rol" required>
+                    <option value="MESERO">Mesero</option>
+                    <option value="CAJERO">Cajero</option>
+                    <option value="COCINA">Personal de Cocina</option>
+                    <option value="ADMINISTRADOR">Administrador</option>
+                </select>
+            </div>
+            <button type="submit">Agregar Empleado</button>
+        </form>
+
+        <!-- Tabla de Empleados Activos -->
+        <h3>Empleados Activos</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>Rol en el Sistema</th>
+                    <th>Estado de Credenciales</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="user : ${usuarios}">
+                    <td th:text="${user.id}">1</td>
+                    <td th:text="${user.nombre}">Administrador Principal</td>
+                    <td>
+                        <span th:class="'badge badge-' + ${#strings.toLowerCase(user.rol)}" th:text="${user.rol}">ADMINISTRADOR</span>
+                    </td>
+                    <td>🔒 Encriptado con BCrypt</td>
+                    <td>
+                        <!-- Botón para eliminar que envía el ID del usuario 🚀 -->
+                        <a th:href="@{/panel/empleados/eliminar/{id}(id=${user.id})}" 
+                           style="color: #ef4444; text-decoration: none; font-weight: bold; font-size: 14px;"
+                           onclick="return confirm('¿Estás seguro de que deseas dar de baja a este empleado?');">
+                           ❌ Eliminar
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</body>
+</html>
