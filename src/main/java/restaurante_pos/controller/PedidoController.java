@@ -24,7 +24,64 @@ public class PedidoController {
     // 1. Añade la herramienta de mensajería como un atributo final privado
 private final PedidoItemRepository pedidoItemRepository;
 private final PlatoService platoService;
-private final SimpMessagingTemplate messagingTemplate; // <-- Reemplaza NotificacionService por esta variable
+private final SimpMessagingTemplate messagingTemplate;
+// 1. Inyecta el servicio en tus atributos privados superiores
+private final UsuarioService usuarioService; // <-- Añade esta línea
+
+// 2. Recuerda actualizar tu constructor explícito para recibirlo:
+public PedidoController(PedidoItemRepository pedidoItemRepository, 
+                        PlatoService platoService, 
+                        SimpMessagingTemplate messagingTemplate,
+                        UsuarioService usuarioService) { // <-- Añade este parámetro
+    this.pedidoItemRepository = pedidoItemRepository;
+    this.platoService = platoService;
+    this.messagingTemplate = messagingTemplate;
+    this.usuarioService = usuarioService; // <-- Añade esta línea
+}
+
+/**
+ * 🔒 RUTA: Renderiza la pantalla de Login
+ */
+@GetMapping("/login-page")
+public String mostrarLogin() {
+    return "login-page";
+}
+
+/**
+ * 🔒 ACCIÓN: Procesa el formulario de ingreso
+ */
+@PostMapping("/login/procesar")
+public String procesarAutenticacion(
+        @RequestParam String username,
+        @RequestParam String password,
+        HttpSession session,
+        Model model) {
+
+    UsuarioService.EmpleadoInfo empleado = usuarioService.autenticar(username, password);
+
+    if (empleado != null) {
+        // 🚀 ESTAMPADO DE SEGURIDAD: Guardamos las credenciales reales del empleado en la sesión
+        session.setAttribute("usuarioAutenticado", username);
+        session.setAttribute("nombreUsuario", empleado.getNombreReal());
+        session.setAttribute("rolUsuario", empleado.getRol());
+        
+        return "redirect:/"; // Redirige de inmediato al mapa de mesas principal
+    }
+
+    // Si las credenciales fallan, recargamos la pantalla con un mensaje de error explícito
+    model.addAttribute("error", "Usuario o contraseña incorrectos. Intente de nuevo.");
+    return "login-page";
+}
+
+/**
+ * 🔒 RUTA: Cierre de turno / Cerrar Sesión
+ */
+@GetMapping("/logout")
+public String cerrarSesion(HttpSession session) {
+    session.invalidate(); // Destruye por completo los permisos en memoria
+    return "redirect:/login-page";
+}
+    
 
 // 2. Modifica tu constructor explícito para recibir la inyección automática
 public PedidoController(PedidoItemRepository pedidoItemRepository, 
