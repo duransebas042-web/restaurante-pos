@@ -278,4 +278,45 @@ public String procesarPagoMesa(@PathVariable String nombre, HttpSession session)
     return "redirect:/"; // Regresa al mapa de mesas principal
 }
 
+/**
+ * 🚀 DESPACHO MASIVO A PRODUCCIÓN
+ * Toma todos los platos en estado 'CARRITO' de la mesa y los envía a la cocina.
+ */
+@GetMapping("/enviar-cocina/{mesa}")
+@Transactional
+public String enviarPedidoACocina(@PathVariable String mesa, HttpSession session) {
+    // 1. Control de seguridad básico de sesión
+    if (session.getAttribute("usuarioAutenticado") == null) {
+        return "redirect:/login-page";
+    }
+
+    // Limpieza de redundancia de texto en la variable mesa si aplica
+    if (mesa.contains("Mesa Mesa")) {
+        mesa = mesa.replace("Mesa Mesa", "Mesa");
+    }
+
+    // 2. Traer todos los ítems actuales cargados a esa mesa en la base de datos
+    List<PedidoItem> pedidosMesa = pedidoItemRepository.findByMesa(mesa);
+
+    // 3. Filtrar y procesar únicamente los que están esperando en el CARRITO temporal
+    List<PedidoItem> itemsParaCocina = pedidosMesa.stream()
+            .filter(item -> item.getEstado() == EstadoPedido.CARRITO)
+            .toList();
+
+    // Si el mesero oprime el botón por accidente y el carrito está vacío, regresamos sin hacer nada
+    if (itemsParaCocina.isEmpty()) {
+        return "redirect:/pedido/" + mesa;
+    }
+
+    // 4. Cambiar el estado de la comanda comercial a PENDIENTE para que la cocina los lea
+    for (PedidoItem item : itemsParaCocina) {
+        item.setEstado(EstadoPedido.PENDIENTE);
+        pedidoItemRepository.save(item); // Sincroniza el cambio en la base de datos
+    }
+
+    // 5. Redireccionar al mesero a la misma pantalla de la mesa para que vea los estados en cola
+    return "redirect:/pedido/" + mesa;
+}
+
+
 
