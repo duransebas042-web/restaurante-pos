@@ -241,19 +241,29 @@
                         </a>
                     </th:block>
 
-                    <!-- Flujo si ya está enviado a producción -->
-                    <th:block th:if="${pedido.estado != 'CARRITO'}">
-                        <span style="font-size: 18px; font-weight: bold; padding: 18px 0; flex: 1;" 
-                              th:style="${pedido.estado == 'LISTO'} ? 'color:#00c853; text-transform:uppercase; animation: blink 1.5s infinite;' : 'color:#b0bec5;'">
-                            <span th:text="${pedido.estado == 'LISTO'} ? '🔔 ¡RECOGER EN BARRA!' : '⏳ En cola de cocina...'"></span>
-                        </span>
-                    </th:block>
-                </div>
-            </div> <!-- Cierre tarjeta -->
+                                    <!-- Flujo si ya está enviado a producción -->
+                <th:block th:if="${pedido.estado != 'CARRITO'}">
+                    <span style="font-size: 18px; font-weight: bold; padding: 18px 0; flex: 1;" 
+                          th:style="${pedido.estado == 'LISTO'} ? 'color:#00c853; text-transform:uppercase; animation: blink 1.5s infinite;' : 'color:#b0bec5;'">
+                        <span th:text="${pedido.estado == 'LISTO'} ? '🔔 ¡RECOGER EN BARRA!' : '⏳ En cola de cocina...'"></span>
+                    </span>
+                </th:block>
+            </div> 
             
-            <!-- Mensaje opcional por si la mesa no tiene nada en comanda -->
+        </div> <!-- Cierre tarjeta (.pedido-card) -->
+        
+        <!-- Mensaje opcional por si la mesa no tiene nada en comanda -->
+        <div th:if="${#lists.isEmpty(pedidos)}" style="text-align: center; color: #b0bec5; padding: 40px 0; font-size: 20px;">
+            No hay productos cargados en esta mesa.
+        </div>
 
-            setInterval(async () => {
+    </div> <!-- Cierre id="seccion-pedidos" -->
+</div> <!-- Cierre clase .pedidos -->
+</div> <!-- Cierre clase .container -->
+
+<!-- SCRIPT DE REFRESCO SILENCIOSO Y CONTROL DE ALERTAS OPERATIVAS -->
+<script>
+setInterval(async () => {
     // 1. Obtener de forma segura el nombre de la mesa inyectado por Thymeleaf
     const mesaActual = "[[${mesa}]]";
     
@@ -304,17 +314,19 @@ function alertasMeseroVisual(mensaje) {
         fontWeight: 'bold',
         boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
         zIndex: '9999',
-        transition: 'all 0.4s ease'
+        opacity: '1',
+        transition: 'opacity 0.4s ease'
     });
     
     alertaDiv.innerHTML = `🔔 ${mensaje}`;
     document.body.appendChild(alertaDiv);
 
-    // Eliminación automática del DOM para no saturar la memoria del navegador
+    // Animación de salida (fade-out) y eliminación definitiva del DOM para no saturar memoria
     setTimeout(() => {
         alertaDiv.style.opacity = '0';
-        setTimeout(() => alertaDiv.remove(), 4000);
+        setTimeout(() => {
+            alertaDiv.remove();
+        }, 400); // Remueve el elemento justo al terminar la transición de opacidad
     }, 6000);
 }
-
-
+</script>
