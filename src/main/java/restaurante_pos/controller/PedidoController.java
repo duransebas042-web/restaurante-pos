@@ -3,14 +3,17 @@ package restaurante_pos.controller;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.servlet.http.HttpSession;
+
 import restaurante_pos.model.PedidoItem;
 import restaurante_pos.model.Plato;
 import restaurante_pos.model.EstadoPedido;
 import restaurante_pos.service.PlatoService;
+import restaurante_pos.service.NotificacionService;
 import restaurante_pos.repository.PedidoItemRepository;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,23 +22,26 @@ public class PedidoController {
 
     private final PedidoItemRepository pedidoItemRepository;
     private final PlatoService platoService;
+    private final NotificacionService notificacionService;
 
-    // Inyección limpia por constructor
-    public PedidoController(PedidoItemRepository pedidoItemRepository, PlatoService platoService) {
+    // Inyección explícita por constructor de todas las dependencias requeridas
+    public PedidoController(PedidoItemRepository pedidoItemRepository, 
+                            PlatoService platoService, 
+                            NotificacionService notificacionService) {
         this.pedidoItemRepository = pedidoItemRepository;
         this.platoService = platoService;
+        this.notificacionService = notificacionService;
     }
 
     @GetMapping("/pedido/{nombre}")
-    @Transactional(readOnly = true) // Optimiza la consulta en base de datos
+    @Transactional(readOnly = true)
     public String pedido(@PathVariable String nombre, Model model, HttpSession session) {
-        
-        // CONTROL DE SEGURIDAD
+        // CONTROL DE SEGURIDAD: Bloqueo si no hay sesión iniciada
         if (session.getAttribute("usuarioAutenticado") == null) {
             return "redirect:/login-page";
         }
 
-        // Limpieza del nombre de la mesa
+        // Limpieza de redundancias en la cadena de texto de la mesa
         if (nombre.contains("Mesa Mesa")) {
             nombre = nombre.replace("Mesa Mesa", "Mesa");
         }
@@ -43,19 +49,18 @@ public class PedidoController {
         List<Plato> platos = platoService.obtenerListaPlatos();
         List<PedidoItem> pedidos = pedidoItemRepository.findByMesa(nombre);
 
-        // OPTIMIZACIÓN DE RENDIMIENTO: Calculamos el total usando flujos y multiplicando por la cantidad
-        // Evitamos los bucles anidados usando operaciones directas si tu PedidoItem guarda su precio unitario
-        double totalCuenta = pedidos.stream()
-                .mapToDouble(item -> item.getPrecioUnitario() * item.getCantidad())
-                .sum();
+        // OPTIMIZACIÓN FINANCIERA: Suma matemática exacta de subtotales con BigDecimal
+        BigDecimal totalCuenta = pedidos.stream()
+                .map(PedidoItem::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Envío de datos a la vista Thymeleaf
+        // Pasamos los datos del mesero y la mesa a la interfaz visual de Thymeleaf
         model.addAttribute("nombreMesero", session.getAttribute("nombreUsuario"));
         model.addAttribute("mesa", nombre);
         model.addAttribute("platos", platos);
         model.addAttribute("pedidos", pedidos);
         model.addAttribute("total", totalCuenta);
-        
+
         return "pedido";
     }
 
@@ -69,7 +74,6 @@ public class PedidoController {
         List<Plato> listaMenu = platoService.obtenerListaPlatos();
         List<String> opciones = new ArrayList<>();
         
-        // Buscar acompañamientos de forma directa
         for (Plato p : listaMenu) {
             if (p.getNombre().equalsIgnoreCase(plato)) {
                 opciones = p.getAcompanamientosPorDefecto();
@@ -80,12 +84,12 @@ public class PedidoController {
         model.addAttribute("mesa", mesa);
         model.addAttribute("plato", plato);
         model.addAttribute("opciones", opciones);
-        
+
         return "configurar";
     }
 
     @PostMapping("/confirmar")
-    @Transactional // Asegura que la inserción sea atómica y segura
+    @Transactional
     public String confirmarPedido(
             @RequestParam String mesa,
             @RequestParam String plato,
@@ -99,6 +103,7 @@ public class PedidoController {
             return "redirect:/login-page";
         }
 
+        // Recuperamos la firma del empleado real que tiene la sesión activa
         String empleadoResponsable = (String) session.getAttribute("nombreUsuario");
         if (empleadoResponsable == null) {
             empleadoResponsable = "Mesero Anónimo";
@@ -106,21 +111,20 @@ public class PedidoController {
 
         List<String> acompanamientosFinales = (seleccionados != null) ? seleccionados : new ArrayList<>();
 
-        // REFACTORIZACIÓN PROFESIONAL: Buscamos el precio real del plato para congelarlo en el item
+        // Buscamos el precio comercial del plato para blindar el histórico de la venta
         List<Plato> listaMenu = platoService.obtenerListaPlatos();
-        double precioActual = 0;
+        BigDecimal precioActual = BigDecimal.ZERO;
         for (Plato p : listaMenu) {
             if (p.getNombre().equalsIgnoreCase(plato)) {
-                precioActual = p.getPrecio();
+                precioActual = BigDecimal.valueOf(p.getPrecio());
                 break;
             }
         }
 
-        // En lugar de hacer un bucle para guardar N veces el mismo objeto, 
-        // guardamos un único registro con la cantidad seleccionada.
+        // OPTIMIZACIÓN OPERATIVA: Guardamos un solo registro consolidado con la cantidad elegida
         PedidoItem nuevoItem = new PedidoItem(mesa, plato, acompanamientosFinales, bebida, observacion);
-        nuevoItem.setCantidad(cantidad); // <-- Agrega este atributo en tu clase PedidoItem
-        nuevoItem.setPrecioUnitario(precioActual); // <-- Agrega este atributo para blindar los precios
+        nuevoItem.setCantidad(cantidad);
+        nuevoItem.setPrecioUnitario(precioActual);
         nuevoItem.setEstado(EstadoPedido.CARRITO);
         nuevoItem.setEstadoComida("PENDIENTE");
         nuevoItem.setEstadoBebida("PENDIENTE");
@@ -132,7 +136,7 @@ public class PedidoController {
     }
 
     @GetMapping("/eliminar/{mesa}/{index}")
-    @Transactional // Vital para operaciones de borrado
+    @Transactional
     public String eliminarPedido(@PathVariable String mesa, @PathVariable int index, HttpSession session) {
         if (session.getAttribute("usuarioAutenticado") == null) {
             return "redirect:/login-page";
@@ -144,8 +148,18 @@ public class PedidoController {
             PedidoItem itemAEliminar = pedidos.get(index);
             pedidoItemRepository.delete(itemAEliminar);
         }
-        
+
         return "redirect:/pedido/" + mesa;
     }
-}
 
+    /**
+     * 🚀 ENDPOINT DE ALERTAS ASÍNCRONAS INTEGRADO
+     * Atiende las peticiones fetch de JavaScript cada 4 segundos.
+     * Retorna datos puros JSON gracias a @ResponseBody sin alterar las vistas HTML.
+     */
+    @GetMapping("/mesero/alertas/{mesa}")
+    @ResponseBody
+    public List<String> verificarNovedadesDeMesa(@PathVariable String mesa) {
+        return notificacionService.consumirAlertas(mesa);
+    }
+}
