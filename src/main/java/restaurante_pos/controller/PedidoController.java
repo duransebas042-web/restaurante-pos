@@ -162,4 +162,51 @@ public class PedidoController {
     public List<String> verificarNovedadesDeMesa(@PathVariable String mesa) {
         return notificacionService.consumirAlertas(mesa);
     }
+
+    /**
+     * 🚀 VISTA DEL MONITOR DE COCINA
+     * Carga todas las comandas en preparación que ya salieron del carrito temporal
+     */
+    @GetMapping("/cocina")
+    @Transactional(readOnly = true)
+    public String verMonitorCocina(Model model, HttpSession session) {
+        if (session.getAttribute("usuarioAutenticado") == null) {
+            return "redirect:/login-page";
+        }
+
+        List<PedidoItem> todasLasComandas = pedidoItemRepository.findAll();
+        
+        // Filtramos para ignorar elementos en el carrito o ya pagados/archivados
+        List<PedidoItem> comandasCocina = todasLasComandas.stream()
+                .filter(item -> item.getEstado() != EstadoPedido.CARRITO && item.getEstado() != EstadoPedido.PAGADO)
+                .toList();
+
+        model.addAttribute("comandas", comandasCocina);
+        return "cocina";
+    }
+
+    /**
+     * 🚀 ACCIÓN: LOGÍSTICA DE PRODUCCIÓN
+     * Transiciona los estados de preparación en cocina y alerta automáticamente al mesero al finalizar
+     */
+    @PostMapping("/cocina/avanzar/{id}")
+    @Transactional
+    public String avanzarEstadoPlato(@PathVariable Long id) {
+        PedidoItem item = pedidoItemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Comanda no encontrada con ID: " + id));
+
+        if (item.getEstado() == EstadoPedido.PENDIENTE) {
+            item.setEstado(EstadoPedido.PREPARANDO);
+        } else if (item.getEstado() == EstadoPedido.PREPARANDO) {
+            item.setEstado(EstadoPedido.LISTO);
+            
+            // 🔔 SISTEMA DE ALERTAS EN TIEMPO REAL: Notifica al mesero responsable de la mesa
+            String mensajeAlerta = "¡El plato '" + item.getPlato() + "' de la " + item.getMesa() + " está LISTO en barra!";
+            notificacionService.enviarAlerta(item.getMesa(), mensajeAlerta);
+        }
+
+        pedidoItemRepository.save(item);
+        return "redirect:/cocina";
+    }
 }
+
