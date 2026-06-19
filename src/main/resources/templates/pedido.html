@@ -253,3 +253,68 @@
             
             <!-- Mensaje opcional por si la mesa no tiene nada en comanda -->
 
+            setInterval(async () => {
+    // 1. Obtener de forma segura el nombre de la mesa inyectado por Thymeleaf
+    const mesaActual = "[[${mesa}]]";
+    
+    try {
+        // 2. Consulta paralela de alertas de pago desde la caja
+        const resAlertas = await fetch('/mesero/alertas/' + encodeURIComponent(mesaActual));
+        if (resAlertas.ok) {
+            const alertas = await resAlertas.json();
+            alertas.forEach(msg => alertasMeseroVisual(msg));
+        }
+
+        // 3. Refresco silencioso y asíncrono del contenedor de platos
+        const resHtml = await fetch(window.location.href);
+        if (resHtml.ok) {
+            const htmlText = await resHtml.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            
+            const seccionVieja = document.getElementById('seccion-pedidos');
+            const seccionNueva = doc.getElementById('seccion-pedidos');
+            
+            if (seccionVieja && seccionNueva) {
+                seccionVieja.innerHTML = seccionNueva.innerHTML;
+            }
+        }
+    } catch (error) {
+        console.warn("Error de reconexión con el servidor POS: ", error);
+    }
+}, 4000);
+
+/**
+ * Despliega una alerta emergente estética en la pantalla del dispositivo del mesero
+ */
+function alertasMeseroVisual(mensaje) {
+    const alertaDiv = document.createElement('div');
+    
+    // Aplicación de estilos optimizados para producción (Estilo Toast profesional)
+    Object.assign(alertaDiv.style, {
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: '#00c853',
+        color: 'white',
+        padding: '20px 30px',
+        borderRadius: '15px',
+        fontSize: '22px',
+        fontWeight: 'bold',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+        zIndex: '9999',
+        transition: 'all 0.4s ease'
+    });
+    
+    alertaDiv.innerHTML = `🔔 ${mensaje}`;
+    document.body.appendChild(alertaDiv);
+
+    // Eliminación automática del DOM para no saturar la memoria del navegador
+    setTimeout(() => {
+        alertaDiv.style.opacity = '0';
+        setTimeout(() => alertaDiv.remove(), 4000);
+    }, 6000);
+}
+
+
