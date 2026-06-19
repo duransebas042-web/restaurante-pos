@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="http://thymeleaf.org">
+<head>
+    <title>Acceso POS - La Sanjuanera</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .login-card {
+            background: #263238;
+            width: 100%;
+            max-width: 420px;
+            padding: 40px 30px;
+            border-radius: 25px;
+            border: 2px solid #00bfa5;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+        }
+        h1 {
+            text-align: center;
+            color: #00bfa5;
+            font-size: 32px;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #b0bec5;
+            font-size: 14px;
+            margin-bottom: 35px;
+            text-transform: uppercase;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            color: #cbd5e1;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .input-field {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid #37474f;
+            background: #1a2327;
+            color: white;
+            font-size: 18px;
+            outline: none;
+            transition: 0.3s;
+        }
+        .input-field:focus {
+            border-color: #00bfa5;
+            box-shadow: 0 0 10px rgba(0,189,165,0.2);
+        }
+        .alert-danger {
+            background: #d32f2f;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            font-size: 15px;
+            text-align: center;
+            border-left: 5px solid #b71c1c;
+        }
+        .btn-ingresar {
+            width: 100%;
+            background: #00c853;
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-transform: uppercase;
+            box-shadow: 0 5px 15px rgba(0,200,83,0.3);
+        }
+        .btn-ingresar:hover {
+            background: #00e676;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h1>LA SANJUANERA</h1>
+        <p class="subtitle">Control de Acceso de Personal</p>
+
+        <!-- Mensaje dinámico si las credenciales fallan -->
+        <div class="alert-danger" th:if="${error != null}" th:text="${error}">
+            Error de autenticación.
+        </div>
+
+        <form th:action="@{/login/procesar}" method="post">
+            <div class="form-group">
+                <label th:for="username">Código de Usuario / Turno:</label>
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       placeholder="Ej: carlos_mesero" 
+                       class="input-field" 
+                       required 
+                       autocomplete="off" />
+            </div>
+
+            <div class="form-group">
+                <label th:for="password">Contraseña / PIN Seguro:</label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       placeholder="••••••••" 
+                       class="input-field" 
+                       required />
+            </div>
+
+            <button type="submit" class="btn-ingresar">
+                🔑 INGRESAR AL SISTEMA
+            </button>
+        </form>
+    </div>
+
+</body>
+</html>
