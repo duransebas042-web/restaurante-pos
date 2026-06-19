@@ -210,3 +210,72 @@ public class PedidoController {
     }
 }
 
+/**
+ * 🚀 VISTA DE FACTURACIÓN (PRE-CUENTA)
+ * Permite al cajero ver el desglose final antes de recibir el dinero.
+ */
+@GetMapping("/caja/mesa/{nombre}")
+@Transactional(readOnly = true)
+public String verDetallePagoMesa(@PathVariable String nombre, Model model, HttpSession session) {
+    if (session.getAttribute("usuarioAutenticado") == null) {
+        return "redirect:/login-page";
+    }
+
+    if (nombre.contains("Mesa Mesa")) {
+        nombre = nombre.replace("Mesa Mesa", "Mesa");
+    }
+
+    // Buscamos los ítems activos que no han sido pagados aún
+    List<PedidoItem> pedidosActivos = pedidoItemRepository.findByMesa(nombre).stream()
+            .filter(item -> item.getEstado() != EstadoPedido.CARRITO && item.getEstado() != EstadoPedido.PAGADO)
+            .toList();
+
+    BigDecimal totalCuenta = pedidosActivos.stream()
+            .map(PedidoItem::getSubtotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    model.addAttribute("mesa", nombre);
+    model.addAttribute("pedidos", pedidosActivos);
+    model.addAttribute("total", totalCuenta);
+
+    return "caja-detalle";
+}
+
+/**
+ * 🚀 ACCIÓN DE PAGO EFECTIVO / FACTURACIÓN
+ * Cierra la cuenta, cambia estados a PAGADO y alerta al mesero.
+ */
+@PostMapping("/caja/pagar/{nombre}")
+@Transactional
+public String procesarPagoMesa(@PathVariable String nombre, HttpSession session) {
+    if (session.getAttribute("usuarioAutenticado") == null) {
+        return "redirect:/login-page";
+    }
+
+    if (nombre.contains("Mesa Mesa")) {
+        nombre = nombre.replace("Mesa Mesa", "Mesa");
+    }
+
+    // Traemos todos los ítems consumidos en esa mesa que falten por pagar
+    List<PedidoItem> pedidosMesa = pedidoItemRepository.findByMesa(nombre).stream()
+            .filter(item -> item.getEstado() != EstadoPedido.CARRITO && item.getEstado() != EstadoPedido.PAGADO)
+            .toList();
+
+    if (pedidosMesa.isEmpty()) {
+        return "redirect:/caja-dashboard"; // Redirige a tu panel principal de caja
+    }
+
+    // Cambiamos el estado a cada producto para archivarlo comercialmente
+    for (PedidoItem item : pedidosMesa) {
+        item.setEstado(EstadoPedido.PAGADO);
+        pedidoItemRepository.save(item);
+    }
+
+    // 🔔 DISPARADOR DE ALERTA ASÍNCRONA: Avisa al mesero que la mesa ya canceló
+    String mensajeFactura = "¡La " + nombre + " ha PAGADO la cuenta en caja! Puedes liberar la mesa.";
+    notificacionService.enviarAlerta(nombre, mensajeFactura);
+
+    return "redirect:/"; // Regresa al mapa de mesas principal
+}
+
+
