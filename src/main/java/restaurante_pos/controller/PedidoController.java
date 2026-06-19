@@ -4,6 +4,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import jakarta.servlet.http.HttpSession;
 
 import restaurante_pos.model.PedidoItem;
@@ -20,18 +21,20 @@ import java.util.List;
 @Controller
 public class PedidoController {
 
-    private final PedidoItemRepository pedidoItemRepository;
-    private final PlatoService platoService;
-    private final NotificacionService notificacionService;
+    // 1. Añade la herramienta de mensajería como un atributo final privado
+private final PedidoItemRepository pedidoItemRepository;
+private final PlatoService platoService;
+private final SimpMessagingTemplate messagingTemplate; // <-- Reemplaza NotificacionService por esta variable
 
-    // Inyección explícita por constructor de todas las dependencias requeridas
-    public PedidoController(PedidoItemRepository pedidoItemRepository, 
-                            PlatoService platoService, 
-                            NotificacionService notificacionService) {
-        this.pedidoItemRepository = pedidoItemRepository;
-        this.platoService = platoService;
-        this.notificacionService = notificacionService;
-    }
+// 2. Modifica tu constructor explícito para recibir la inyección automática
+public PedidoController(PedidoItemRepository pedidoItemRepository, 
+                        PlatoService platoService, 
+                        SimpMessagingTemplate messagingTemplate) {
+    this.pedidoItemRepository = pedidoItemRepository;
+    this.platoService = platoService;
+    this.messagingTemplate = messagingTemplate;
+}
+
 
     @GetMapping("/pedido/{nombre}")
     @Transactional(readOnly = true)
