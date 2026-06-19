@@ -2,6 +2,7 @@
 <project xmlns="http://apache.org" 
          xmlns:xsi="http://w3.org"
          xsi:schemaLocation="http://apache.org https://apache.org">
+    
     <modelVersion>4.0.0</modelVersion>
     
     <parent>
@@ -32,6 +33,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- 🚀 COMUNICACIÓN EN TIEMPO REAL (WEBSOCKETS) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
         <!-- PERSISTENCIA DE DATOS (Mapeo de Objetos Java a Tablas SQL) -->
