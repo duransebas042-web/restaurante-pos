@@ -192,25 +192,28 @@ public PedidoController(PedidoItemRepository pedidoItemRepository,
      * 🚀 ACCIÓN: LOGÍSTICA DE PRODUCCIÓN
      * Transiciona los estados de preparación en cocina y alerta automáticamente al mesero al finalizar
      */
-    @PostMapping("/cocina/avanzar/{id}")
-    @Transactional
-    public String avanzarEstadoPlato(@PathVariable Long id) {
-        PedidoItem item = pedidoItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Comanda no encontrada con ID: " + id));
+@PostMapping("/cocina/avanzar/{id}")
+@Transactional
+public String avanzarEstadoPlato(@PathVariable Long id) {
+    PedidoItem item = pedidoItemRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Comanda no encontrada con ID: " + id));
 
-        if (item.getEstado() == EstadoPedido.PENDIENTE) {
-            item.setEstado(EstadoPedido.PREPARANDO);
-        } else if (item.getEstado() == EstadoPedido.PREPARANDO) {
-            item.setEstado(EstadoPedido.LISTO);
-            
-            // 🔔 SISTEMA DE ALERTAS EN TIEMPO REAL: Notifica al mesero responsable de la mesa
-            String mensajeAlerta = "¡El plato '" + item.getPlato() + "' de la " + item.getMesa() + " está LISTO en barra!";
-            notificacionService.enviarAlerta(item.getMesa(), mensajeAlerta);
-        }
-
-        pedidoItemRepository.save(item);
-        return "redirect:/cocina";
+    if (item.getEstado() == EstadoPedido.PENDIENTE) {
+        item.setEstado(EstadoPedido.PREPARANDO);
+        
+        // 🚀 WEBSOCKET: Ordena silenciosamente a la pantalla del mesero refrescar el estado a "PREPARANDO"
+        messagingTemplate.convertAndSend("/topic/mesa/" + item.getMesa(), "REFRESCAR_PANTALLA");
+        
+    } else if (item.getEstado() == EstadoPedido.PREPARANDO) {
+        item.setEstado(EstadoPedido.LISTO);
+        
+        // 🚀 WEBSOCKET: Envía la orden de refrescar y la notificación flotante al mismo tiempo
+        messagingTemplate.convertAndSend("/topic/mesa/" + item.getMesa(), "REFRESCAR_PANTALLA");
+        messagingTemplate.convertAndSend("/topic/mesa/" + item.getMesa(), "ALERTA:¡El plato '" + item.getPlato() + "' está LISTO en barra!");
     }
+
+    pedidoItemRepository.save(item);
+    return "redirect:/cocina";
 }
 
 /**
@@ -259,27 +262,25 @@ public String procesarPagoMesa(@PathVariable String nombre, HttpSession session)
         nombre = nombre.replace("Mesa Mesa", "Mesa");
     }
 
-    // Traemos todos los ítems consumidos en esa mesa que falten por pagar
     List<PedidoItem> pedidosMesa = pedidoItemRepository.findByMesa(nombre).stream()
             .filter(item -> item.getEstado() != EstadoPedido.CARRITO && item.getEstado() != EstadoPedido.PAGADO)
             .toList();
 
     if (pedidosMesa.isEmpty()) {
-        return "redirect:/caja-dashboard"; // Redirige a tu panel principal de caja
+        return "redirect:/";
     }
 
-    // Cambiamos el estado a cada producto para archivarlo comercialmente
     for (PedidoItem item : pedidosMesa) {
         item.setEstado(EstadoPedido.PAGADO);
         pedidoItemRepository.save(item);
     }
 
-    // 🔔 DISPARADOR DE ALERTA ASÍNCRONA: Avisa al mesero que la mesa ya canceló
-    String mensajeFactura = "¡La " + nombre + " ha PAGADO la cuenta en caja! Puedes liberar la mesa.";
-    notificacionService.enviarAlerta(nombre, mensajeFactura);
+    // 🚀 WEBSOCKET: Emite la alerta de pago cerrado directo a la pantalla del mesero al instante
+    messagingTemplate.convertAndSend("/topic/mesa/" + nombre, "ALERTA:¡La cuenta ha sido PAGADA en caja! Puedes liberar la mesa.");
 
-    return "redirect:/"; // Regresa al mapa de mesas principal
+    return "redirect:/";
 }
+
 
 /**
  * 🚀 DESPACHO MASIVO A PRODUCCIÓN
